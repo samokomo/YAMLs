@@ -1,0 +1,74 @@
+version: "2.0"
+ 
+endpoints:
+ myendpoint:
+   kind: ip
+ 
+services:
+ app:
+   image: ubuntu:latest
+   env:
+      - 'SSH_PUBKEY=ssh-rsa *****'
+   command:
+      - "bash"
+      - "-c"
+   args:
+        - 'apt-get update;
+       apt-get install -y --no-install-recommends -- ssh;
+       mkdir -p -m0755 /run/sshd;
+       mkdir -m700 ~/.ssh;
+       echo "$SSH_PUBKEY" | tee ~/.ssh/authorized_keys;
+       chmod 0600 ~/.ssh/authorized_keys;
+       ls -lad ~ ~/.ssh ~/.ssh/authorized_keys;
+       md5sum ~/.ssh/authorized_keys;
+       exec /usr/sbin/sshd -D'
+   expose:
+     - port: 22 # SSH port
+       as: 22
+       to:
+         - global: true
+           ip: "myendpoint"
+     - port: 80 # http port
+       as: 80
+       to:
+         - global: true
+           ip: "myendpoint"
+     - port: 443 # https port
+       as: 443
+       to:
+         - global: true
+           ip: "myendpoint"
+     - port: 3000 # NodeJS port
+       as: 3000
+       to:
+         - global: true
+           ip: "myendpoint"
+     - port: 1880 # NODE-RED port
+       as: 1880
+       to:
+         - global: true
+           ip: "myendpoint" 
+profiles:
+ compute:
+   app:
+      resources:
+        cpu:
+          units: 2
+        memory:
+          size: 8GB
+        storage:
+          - size: 20Gi
+ 
+ placement:
+   dcloud:
+     pricing:
+       app:
+         denom: uakt
+         amount: 10000
+ 
+deployment:
+ app:
+   dcloud:
+     profile: app
+     count: 1
+     
